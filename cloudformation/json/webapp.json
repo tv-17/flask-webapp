@@ -1,0 +1,190 @@
+{
+    "Parameters": {
+        "Subnet1": {
+            "Default": "subnet-757bf058",
+            "Description": "First VPC subnet ID for the app.",
+            "Type": "String"
+        },
+        "Subnet2": {
+            "Default": "subnet-757bf058",
+            "Description": "Second VPC subnet ID for the app.",
+            "Type": "String"
+        },
+        "VpcId": {
+            "Default": "vpc-1f04cf79",
+            "Description": "VPC ID for the app.",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "AutoscalingGroup": {
+            "Properties": {
+                "DesiredCapacity": 2,
+                "HealthCheckType": "EC2",
+                "LaunchConfigurationName": {
+                    "Ref": "LaunchConfiguration"
+                },
+                "LoadBalancerNames": [
+                    {
+                        "Ref": "LoadBalancer"
+                    }
+                ],
+                "MaxSize": 4,
+                "MinSize": 1,
+                "VPCZoneIdentifier": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ]
+            },
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "UpdatePolicy": {
+                "AutoScalingReplacingUpdate": {
+                    "WillReplace": "true"
+                },
+                "AutoScalingRollingUpdate": {
+                    "MaxBatchSize": "1",
+                    "MinInstancesInService": "1",
+                    "PauseTime": "PT5M",
+                    "WaitOnResourceSignals": "true"
+                }
+            }
+        },
+        "AutoscalingSG": {
+            "Properties": {
+                "GroupDescription": "Allows inbound connection from elb sg on port 80",
+                "SecurityGroupEgress": [
+                    {
+                        "CidrIp": "127.0.0.1",
+                        "FromPort": "1234",
+                        "IpProtocol": "tcp",
+                        "ToPort": "1234"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "FromPort": "80",
+                        "IpProtocol": "tcp",
+                        "SourceSecurityGroupId": {
+                            "Ref": "ElbSg"
+                        },
+                        "ToPort": "80"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "ElbSg": {
+            "Properties": {
+                "GroupDescription": "Allows inbound connection from from everywhere on port 80",
+                "SecurityGroupEgress": [
+                    {
+                        "CidrIp": "127.0.0.1",
+                        "FromPort": "1234",
+                        "IpProtocol": "tcp",
+                        "ToPort": "1234"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "80",
+                        "IpProtocol": "tcp",
+                        "ToPort": "80"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "LaunchConfiguration": {
+            "Properties": {
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/sda1",
+                        "Ebs": {
+                            "VolumeSize": "8"
+                        }
+                    }
+                ],
+                "ImageId": "ami-b73b63a0",
+                "InstanceType": "t2.micro",
+                "KeyName": "thivancf",
+                "SecurityGroups": [
+                    {
+                        "Ref": "AutoscalingSG"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "cfn-signal -e 0",
+                                "    --resource AutoscalingGroup",
+                                "    --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "    --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::AutoScaling::LaunchConfiguration"
+        },
+        "LoadBalancer": {
+            "Properties": {
+                "ConnectionDrainingPolicy": {
+                    "Enabled": true,
+                    "Timeout": 120
+                },
+                "CrossZone": "true",
+                "HealthCheck": {
+                    "HealthyThreshold": "5",
+                    "Interval": "20",
+                    "Target": "HTTP:80/",
+                    "Timeout": "15",
+                    "UnhealthyThreshold": "2"
+                },
+                "Listeners": [
+                    {
+                        "InstancePort": "80",
+                        "LoadBalancerPort": "80",
+                        "Protocol": "HTTP"
+                    }
+                ],
+                "LoadBalancerName": "webapp-elb",
+                "Scheme": "internet-facing",
+                "SecurityGroups": [
+                    {
+                        "Ref": "ElbSg"
+                    }
+                ],
+                "Subnets": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ]
+            },
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+        }
+    }
+}

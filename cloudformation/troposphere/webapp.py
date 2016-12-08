@@ -12,10 +12,10 @@ class WebApp(object):
 
     def __init__(self):
         self.t = Template()
-        self.vpc_param, self.subnet1, self.subnet2 = self.add_params()
+        self.vpc_param, self.subnet1, self.subnet2, self.webapp_zip = self.add_params()
         self.elb_sg, self.autoscaling_sg = self.create_security_groups(self.vpc_param)
         self.load_balancer = self.create_elb(self.subnet1, self.subnet2, self.elb_sg)
-        self.create_instance(self.subnet1, self.subnet2, self.load_balancer, self.autoscaling_sg)
+        self.create_instance(self.subnet1, self.subnet2, self.load_balancer, self.autoscaling_sg, self.webapp_zip)
 
     def add_params(self):
         vpc_param = self.t.add_parameter(Parameter(
@@ -39,7 +39,14 @@ class WebApp(object):
             Default="subnet-757bf058"
         ))
 
-        return vpc_param, subnet1, subnet2
+        webapp_zip = self.t.add_parameter(Parameter(
+            "WebappZip",
+            Type="String",
+            Description="Name of WebApp zip",
+        ))
+
+
+        return vpc_param, subnet1, subnet2, webapp_zip
 
     def create_security_groups(self, vpc_param):
 
@@ -122,12 +129,17 @@ class WebApp(object):
 
         return load_balancer
 
-    def create_instance(self, subnet1, subnet2, load_balancer, autoscaling_sg):
+    def create_instance(self, subnet1, subnet2, load_balancer, autoscaling_sg, webapp_zip):
 
         launch_config = self.t.add_resource(LaunchConfiguration(
             "LaunchConfiguration",
             UserData=Base64(Join('', [
                 "#!/bin/bash\n",
+                "yum install"
+                "aws s3 cp s3://thivan-sample-data/webapp-", Ref(webapp_zip), " .\n",
+                "sudo yum install httpd\n",
+                "sudo chkconfig httpd on\n",
+                "sudo /etc/init.d/httpd start\n",
                 "cfn-signal -e 0",
                 "    --resource AutoscalingGroup",
                 "    --stack ", Ref("AWS::StackName"),
