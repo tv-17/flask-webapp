@@ -36,7 +36,7 @@ class WebApp(object):
             "Subnet2",
             Type="String",
             Description="Second VPC subnet ID for the app.",
-            Default="subnet-757bf058"
+            Default="subnet-4ea6dc07"
         ))
 
         webapp_zip = self.t.add_parameter(Parameter(
@@ -44,7 +44,6 @@ class WebApp(object):
             Type="String",
             Description="Name of WebApp zip",
         ))
-
 
         return vpc_param, subnet1, subnet2, webapp_zip
 
@@ -68,7 +67,7 @@ class WebApp(object):
                         IpProtocol="tcp",
                         FromPort="1234",
                         ToPort="1234",
-                        CidrIp="127.0.0.1",
+                        CidrIp="0.0.0.0/0",
                     )
                 ]
             )
@@ -92,7 +91,7 @@ class WebApp(object):
                         IpProtocol="tcp",
                         FromPort="1234",
                         ToPort="1234",
-                        CidrIp="127.0.0.1",
+                        CidrIp="0.0.0.0/0",
                     )
                 ]
             )
@@ -135,11 +134,10 @@ class WebApp(object):
             "LaunchConfiguration",
             UserData=Base64(Join('', [
                 "#!/bin/bash\n",
-                "yum install"
-                "aws s3 cp s3://thivan-sample-data/webapp-", Ref(webapp_zip), " .\n",
-                "sudo yum install httpd\n",
+                "sudo yum install httpd -y\n",
                 "sudo chkconfig httpd on\n",
                 "sudo /etc/init.d/httpd start\n",
+                "aws s3 cp s3://thivan-sample-data/webapp-", Ref(webapp_zip), " .\n",
                 "cfn-signal -e 0",
                 "    --resource AutoscalingGroup",
                 "    --stack ", Ref("AWS::StackName"),

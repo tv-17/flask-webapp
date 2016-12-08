@@ -6,13 +6,17 @@
             "Type": "String"
         },
         "Subnet2": {
-            "Default": "subnet-757bf058",
+            "Default": "subnet-4ea6dc07",
             "Description": "Second VPC subnet ID for the app.",
             "Type": "String"
         },
         "VpcId": {
             "Default": "vpc-1f04cf79",
             "Description": "VPC ID for the app.",
+            "Type": "String"
+        },
+        "WebappZip": {
+            "Description": "Name of WebApp zip",
             "Type": "String"
         }
     },
@@ -58,7 +62,7 @@
                 "GroupDescription": "Allows inbound connection from elb sg on port 80",
                 "SecurityGroupEgress": [
                     {
-                        "CidrIp": "127.0.0.1",
+                        "CidrIp": "127.0.0.1/32",
                         "FromPort": "1234",
                         "IpProtocol": "tcp",
                         "ToPort": "1234"
@@ -85,7 +89,7 @@
                 "GroupDescription": "Allows inbound connection from from everywhere on port 80",
                 "SecurityGroupEgress": [
                     {
-                        "CidrIp": "127.0.0.1",
+                        "CidrIp": "127.0.0.1/32",
                         "FromPort": "1234",
                         "IpProtocol": "tcp",
                         "ToPort": "1234"
@@ -129,6 +133,14 @@
                             "",
                             [
                                 "#!/bin/bash\n",
+                                "aws s3 cp s3://thivan-sample-data/webapp-",
+                                {
+                                    "Ref": "WebappZip"
+                                },
+                                " .\n",
+                                "sudo yum install httpd\n",
+                                "sudo chkconfig httpd on\n",
+                                "sudo /etc/init.d/httpd start\n",
                                 "cfn-signal -e 0",
                                 "    --resource AutoscalingGroup",
                                 "    --stack ",
