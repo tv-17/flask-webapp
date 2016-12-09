@@ -15,3 +15,5 @@ make create_stack
 to serve webapp
 - autoscaling actions
 - adds cname alias to route53 record
+
+![Image of architecture on aws](/img/architecture.jpeg)

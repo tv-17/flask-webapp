@@ -1,0 +1,30 @@
+body {
+    background-color: powderblue;
+    font-size: 20px
+    font-family: serif
+}
+h1 {
+    color: black;
+    text-align: center;
+
+}
+p {
+    color: white;
+    text-align: center;
+}
+
+div {
+    height: 200px;
+    width: 700px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-top: -250px;
+    margin-left: -350px;
+}
+
+img {
+    display: block;
+    margin: 0 auto;
+    padding-top: 40px
+}
