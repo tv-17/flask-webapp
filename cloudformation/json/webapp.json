@@ -24,6 +24,7 @@
         "AutoscalingGroup": {
             "Properties": {
                 "DesiredCapacity": 2,
+                "HealthCheckGracePeriod": 300,
                 "HealthCheckType": "EC2",
                 "LaunchConfigurationName": {
                     "Ref": "LaunchConfiguration"
@@ -52,22 +53,13 @@
                 "AutoScalingRollingUpdate": {
                     "MaxBatchSize": "1",
                     "MinInstancesInService": "1",
-                    "PauseTime": "PT5M",
-                    "WaitOnResourceSignals": "true"
+                    "PauseTime": "PT5M"
                 }
             }
         },
         "AutoscalingSG": {
             "Properties": {
                 "GroupDescription": "Allows inbound connection from elb sg on port 80",
-                "SecurityGroupEgress": [
-                    {
-                        "CidrIp": "127.0.0.1/32",
-                        "FromPort": "1234",
-                        "IpProtocol": "tcp",
-                        "ToPort": "1234"
-                    }
-                ],
                 "SecurityGroupIngress": [
                     {
                         "FromPort": "80",
@@ -87,14 +79,6 @@
         "ElbSg": {
             "Properties": {
                 "GroupDescription": "Allows inbound connection from from everywhere on port 80",
-                "SecurityGroupEgress": [
-                    {
-                        "CidrIp": "127.0.0.1/32",
-                        "FromPort": "1234",
-                        "IpProtocol": "tcp",
-                        "ToPort": "1234"
-                    }
-                ],
                 "SecurityGroupIngress": [
                     {
                         "CidrIp": "0.0.0.0/0",
@@ -111,14 +95,8 @@
         },
         "LaunchConfiguration": {
             "Properties": {
-                "BlockDeviceMappings": [
-                    {
-                        "DeviceName": "/dev/sda1",
-                        "Ebs": {
-                            "VolumeSize": "8"
-                        }
-                    }
-                ],
+                "AssociatePublicIpAddress": "true",
+                "IamInstanceProfile": "arn:aws:iam::205198152101:instance-profile/webapps3",
                 "ImageId": "ami-b73b63a0",
                 "InstanceType": "t2.micro",
                 "KeyName": "thivancf",
@@ -133,14 +111,16 @@
                             "",
                             [
                                 "#!/bin/bash\n",
+                                "sudo yum install httpd -y\n",
+                                "sudo chkconfig httpd on\n",
+                                "sudo service httpd start\n",
+                                "sudo touch /var/www/html/index.html\n",
+                                "sudo service httpd restart\n",
                                 "aws s3 cp s3://thivan-sample-data/webapp-",
                                 {
                                     "Ref": "WebappZip"
                                 },
                                 " .\n",
-                                "sudo yum install httpd\n",
-                                "sudo chkconfig httpd on\n",
-                                "sudo /etc/init.d/httpd start\n",
                                 "cfn-signal -e 0",
                                 "    --resource AutoscalingGroup",
                                 "    --stack ",
@@ -167,11 +147,11 @@
                 },
                 "CrossZone": "true",
                 "HealthCheck": {
-                    "HealthyThreshold": "5",
+                    "HealthyThreshold": "2",
                     "Interval": "20",
-                    "Target": "HTTP:80/",
+                    "Target": "TCP:80",
                     "Timeout": "15",
-                    "UnhealthyThreshold": "2"
+                    "UnhealthyThreshold": "9"
                 },
                 "Listeners": [
                     {

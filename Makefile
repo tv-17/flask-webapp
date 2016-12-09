@@ -35,7 +35,7 @@ create_stack: upload
 
 update_stack: upload
 	python cloudformation/troposphere/webapp.py > cloudformation/json/webapp.json
-	. env/bin/activate && aws cloudformation create-stack --stack-name webapp-stack \
+	. env/bin/activate && aws cloudformation update-stack --stack-name webapp-stack \
 	--template-body file:////Users/thivanvisvanathan/clearscore/cloudformation/json/webapp.json \
 	--parameters ParameterKey=WebappZip,ParameterValue=webapp-$$GIT_COMMIT.zip \
 	--profile "profile cr-training1" \
@@ -43,7 +43,9 @@ update_stack: upload
 
 delete_stack:
 	python cloudformation/troposphere/webapp.py > cloudformation/json/webapp.json
-	. env/bin/activate && aws cloudformation delete-stack --stack-name webapp-stack
+	. env/bin/activate && aws cloudformation delete-stack --stack-name webapp-stack \
+	--profile "profile cr-training1" \
+	--region us-east-1
 
 run:
 	. env/bin/activate && \

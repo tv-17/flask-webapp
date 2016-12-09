@@ -61,15 +61,15 @@ class WebApp(object):
                         ToPort="80",
                         CidrIp="0.0.0.0/0",
                     )
-                ],
-                SecurityGroupEgress=[
-                    SecurityGroupRule(
-                        IpProtocol="tcp",
-                        FromPort="1234",
-                        ToPort="1234",
-                        CidrIp="0.0.0.0/0",
-                    )
                 ]
+                # SecurityGroupEgress=[
+                #     SecurityGroupRule(
+                #         IpProtocol="tcp",
+                #         FromPort="1234",
+                #         ToPort="1234",
+                #         CidrIp="0.0.0.0/0",
+                #     )
+                # ]
             )
         )
 
@@ -85,15 +85,15 @@ class WebApp(object):
                         ToPort="80",
                         SourceSecurityGroupId=Ref(elb_sg),
                     )
-                ],
-                SecurityGroupEgress=[
-                    SecurityGroupRule(
-                        IpProtocol="tcp",
-                        FromPort="1234",
-                        ToPort="1234",
-                        CidrIp="0.0.0.0/0",
-                    )
                 ]
+                # SecurityGroupEgress=[
+                #     SecurityGroupRule(
+                #         IpProtocol="tcp",
+                #         FromPort="1234",
+                #         ToPort="1234",
+                #         CidrIp="0.0.0.0/0",
+                #     )
+                # ]
             )
         )
         return elb_sg, autoscaling_sg
@@ -107,9 +107,9 @@ class WebApp(object):
             ),
             Subnets=[Ref(subnet1), Ref(subnet2)],
             HealthCheck=HealthCheck(
-                Target="HTTP:80/",
-                HealthyThreshold="5",
-                UnhealthyThreshold="2",
+                Target="TCP:80",
+                HealthyThreshold="2",
+                UnhealthyThreshold="9",
                 Interval="20",
                 Timeout="15",
             ),
@@ -136,23 +136,19 @@ class WebApp(object):
                 "#!/bin/bash\n",
                 "sudo yum install httpd -y\n",
                 "sudo chkconfig httpd on\n",
-                "sudo /etc/init.d/httpd start\n",
+                "sudo service httpd start\n",
+                "sudo touch /var/www/html/index.html\n",
+                "sudo service httpd restart\n",
                 "aws s3 cp s3://thivan-sample-data/webapp-", Ref(webapp_zip), " .\n",
                 "cfn-signal -e 0",
                 "    --resource AutoscalingGroup",
                 "    --stack ", Ref("AWS::StackName"),
                 "    --region ", Ref("AWS::Region"), "\n"
             ])),
+            IamInstanceProfile="arn:aws:iam::205198152101:instance-profile/webapps3",
             ImageId="ami-b73b63a0",
             KeyName="thivancf",
-            BlockDeviceMappings=[
-                BlockDeviceMapping(
-                    DeviceName="/dev/sda1",
-                    Ebs=EBSBlockDevice(
-                        VolumeSize="8"
-                    )
-                ),
-            ],
+            AssociatePublicIpAddress=True,
             SecurityGroups=[Ref(autoscaling_sg)],
             InstanceType="t2.micro",
         ))
@@ -165,6 +161,7 @@ class WebApp(object):
             MaxSize=4,
             VPCZoneIdentifier=[Ref(subnet1), Ref(subnet2)],
             LoadBalancerNames=[Ref(load_balancer)],
+            HealthCheckGracePeriod=300,
             HealthCheckType="EC2",
             UpdatePolicy=UpdatePolicy(
                 AutoScalingReplacingUpdate=AutoScalingReplacingUpdate(
@@ -174,7 +171,6 @@ class WebApp(object):
                     PauseTime='PT5M',
                     MinInstancesInService="1",
                     MaxBatchSize='1',
-                    WaitOnResourceSignals=True
                 )
             )
         ))
