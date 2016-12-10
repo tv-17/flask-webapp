@@ -21,19 +21,10 @@ The command will also trigger the upload of the latest source code to S3 version
 
 `make create_stack`
 
-To deploy a change in source code to a stack that already exists the following command can be used:
+To deploy a change in source code to a stack that already exists:
 
 `make update_stack`
 
-To clean up all resources and delete the stack run:
+To clean up all resources and delete the stack:
 
 `make delete_stack`
-
-
-
-- userdata provisions instance by setting up apache, mod_wsgi
-to serve webapp
-- autoscaling actions
-- adds cname alias to route53 record
-
-![Image of architecture on aws](/img/architecture.jpeg)
