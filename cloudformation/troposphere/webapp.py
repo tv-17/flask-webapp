@@ -1,4 +1,4 @@
-from troposphere import Base64, Join
+from troposphere import Base64, Join, GetAtt
 from troposphere import Parameter, Ref, Template
 from troposphere.autoscaling import AutoScalingGroup, LaunchConfiguration, ScalingPolicy
 from troposphere.elasticloadbalancing import LoadBalancer
@@ -6,6 +6,7 @@ from troposphere.policies import AutoScalingReplacingUpdate, AutoScalingRollingU
 from troposphere.ec2 import SecurityGroup, SecurityGroupRule
 from troposphere.elasticloadbalancing import ConnectionDrainingPolicy, HealthCheck, Listener
 from troposphere.cloudwatch import Alarm, MetricDimension
+from troposphere.route53 import RecordSetType, AliasTarget
 
 
 class WebApp(object):
@@ -16,6 +17,7 @@ class WebApp(object):
         self.elb_sg, self.autoscaling_sg = self.create_security_groups(self.vpc_param)
         self.load_balancer = self.create_elb(self.subnet1, self.subnet2, self.elb_sg)
         self.create_instance(self.subnet1, self.subnet2, self.load_balancer, self.autoscaling_sg, self.webapp_zip)
+        self.create_route53_records(self.load_balancer)
 
     def add_params(self):
         vpc_param = self.t.add_parameter(Parameter(
@@ -212,6 +214,20 @@ class WebApp(object):
             MetricName="CPUUtilization"
         ))
         return launch_config
+
+    def create_route53_records(self, load_balancer):
+        self.t.add_resource(RecordSetType(
+            "ARecord",
+            AliasTarget=AliasTarget(
+                HostedZoneId=GetAtt(load_balancer, "CanonicalHostedZoneNameID"),
+                DNSName=GetAtt(load_balancer, "DNSName")
+            ),
+            HostedZoneId="Z2XJ10AKMCBNEF",
+            Comment="A Record Alias to ELB",
+            Name="loremipsum.tv17.co.uk.",
+            Type="A",
+            DependsOn="LoadBalancer"
+        ))
 
 if __name__ == '__main__':
     template = WebApp()
