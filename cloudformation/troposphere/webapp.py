@@ -1,11 +1,12 @@
-from troposphere import Base64, Join
+from troposphere import Base64, Join, GetAtt
 from troposphere import Parameter, Ref, Template
 from troposphere.autoscaling import AutoScalingGroup, LaunchConfiguration, ScalingPolicy
 from troposphere.elasticloadbalancing import LoadBalancer
 from troposphere.policies import AutoScalingReplacingUpdate, AutoScalingRollingUpdate, UpdatePolicy
-from troposphere.ec2 import SecurityGroup, SecurityGroupRule
+from troposphere.ec2 import SecurityGroup, SecurityGroupRule, SecurityGroupEgress
 from troposphere.elasticloadbalancing import ConnectionDrainingPolicy, HealthCheck, Listener
 from troposphere.cloudwatch import Alarm, MetricDimension
+from troposphere.route53 import RecordSetType, AliasTarget
 
 
 class WebApp(object):
@@ -16,6 +17,7 @@ class WebApp(object):
         self.elb_sg, self.autoscaling_sg = self.create_security_groups(self.vpc_param)
         self.load_balancer = self.create_elb(self.subnet1, self.subnet2, self.elb_sg)
         self.create_instance(self.subnet1, self.subnet2, self.load_balancer, self.autoscaling_sg, self.webapp_zip)
+        self.create_route53_records(self.load_balancer)
 
     def add_params(self):
         vpc_param = self.t.add_parameter(Parameter(
@@ -62,14 +64,6 @@ class WebApp(object):
                         CidrIp="0.0.0.0/0",
                     )
                 ]
-                # SecurityGroupEgress=[
-                #     SecurityGroupRule(
-                #         IpProtocol="tcp",
-                #         FromPort="1234",
-                #         ToPort="1234",
-                #         CidrIp="0.0.0.0/0",
-                #     )
-                # ]
             )
         )
 
@@ -86,16 +80,17 @@ class WebApp(object):
                         SourceSecurityGroupId=Ref(elb_sg),
                     )
                 ]
-                # SecurityGroupEgress=[
-                #     SecurityGroupRule(
-                #         IpProtocol="tcp",
-                #         FromPort="1234",
-                #         ToPort="1234",
-                #         CidrIp="0.0.0.0/0",
-                #     )
-                # ]
             )
         )
+
+        self.t.add_resource(SecurityGroupEgress(
+            "ELBegress",
+            DestinationSecurityGroupId=Ref(autoscaling_sg),
+            GroupId=Ref(elb_sg),
+            IpProtocol="-1",
+            FromPort="-1",
+            ToPort="-1"
+        ))
         return elb_sg, autoscaling_sg
 
     def create_elb(self, subnet1, subnet2, elb_sg):
@@ -158,7 +153,6 @@ class WebApp(object):
             IamInstanceProfile="arn:aws:iam::205198152101:instance-profile/webapps3",
             ImageId="ami-b73b63a0",
             KeyName="thivancf",
-            AssociatePublicIpAddress=True,
             SecurityGroups=[Ref(autoscaling_sg)],
             InstanceType="t2.micro",
         ))
@@ -212,6 +206,20 @@ class WebApp(object):
             MetricName="CPUUtilization"
         ))
         return launch_config
+
+    def create_route53_records(self, load_balancer):
+        self.t.add_resource(RecordSetType(
+            "ARecord",
+            AliasTarget=AliasTarget(
+                HostedZoneId=GetAtt(load_balancer, "CanonicalHostedZoneNameID"),
+                DNSName=GetAtt(load_balancer, "DNSName")
+            ),
+            HostedZoneId="Z2XJ10AKMCBNEF",
+            Comment="A Record Alias to ELB",
+            Name="loremipsum.tv17.co.uk.",
+            Type="A",
+            DependsOn="LoadBalancer"
+        ))
 
 if __name__ == '__main__':
     template = WebApp()

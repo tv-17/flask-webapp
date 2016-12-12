@@ -21,6 +21,30 @@
         }
     },
     "Resources": {
+        "ARecord": {
+            "DependsOn": "LoadBalancer",
+            "Properties": {
+                "AliasTarget": {
+                    "DNSName": {
+                        "Fn::GetAtt": [
+                            "LoadBalancer",
+                            "DNSName"
+                        ]
+                    },
+                    "HostedZoneId": {
+                        "Fn::GetAtt": [
+                            "LoadBalancer",
+                            "CanonicalHostedZoneNameID"
+                        ]
+                    }
+                },
+                "Comment": "A Record Alias to ELB",
+                "HostedZoneId": "Z2XJ10AKMCBNEF",
+                "Name": "loremipsum.tv17.co.uk.",
+                "Type": "A"
+            },
+            "Type": "AWS::Route53::RecordSet"
+        },
         "AutoscalingGroup": {
             "Properties": {
                 "DesiredCapacity": 2,
@@ -101,6 +125,20 @@
                 "Threshold": "50"
             },
             "Type": "AWS::CloudWatch::Alarm"
+        },
+        "ELBegress": {
+            "Properties": {
+                "DestinationSecurityGroupId": {
+                    "Ref": "AutoscalingSG"
+                },
+                "FromPort": "-1",
+                "GroupId": {
+                    "Ref": "ElbSg"
+                },
+                "IpProtocol": "-1",
+                "ToPort": "-1"
+            },
+            "Type": "AWS::EC2::SecurityGroupEgress"
         },
         "ElbSg": {
             "Properties": {

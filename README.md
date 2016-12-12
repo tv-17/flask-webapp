@@ -3,12 +3,12 @@
 This repository contains the code for deploying a simple scalable web application hosted on Amazon Web Services (AWS).
 
 ## AWS Infrastructure
-The WebApp is hosted on multiple EC2 instances within an AutoScaling group served by an Elastic Load Balancer. S3 is being leveraged as a location for serving the most up to date version of the source code for the app. A Route53 Cloudformation resource dynamically updates the CNAME Alias to point the ELB to a fixed DNS.
+The WebApp is hosted on multiple EC2 instances within an AutoScaling group served by an Elastic Load Balancer. S3 is being leveraged as a location for serving the most up to date version of the source code for the app. A Route53 Cloudformation resource dynamically updates the A Record (Alias) to point the ELB to a fixed DNS.
 
 ![Image of architecture on aws](/img/architecture.jpeg)
 
 ## Deployment and Scalability
-Deploying the infrastructure follows the principles of Infrastructure as Code. The entire stack is written in [troposphere](https://github.com/cloudtools/troposphere) (a python library to create native cloudformation). Using troposphere allows us to take advantage of the logic presented by a high level programming language - python (i.e. adding conditional logic and the ability to integrate with other application code).
+Deploying the infrastructure follows the principles of Infrastructure as Code. The entire stack is written in [troposphere](https://github.com/cloudtools/troposphere) (a Python library to create native cloudformation). Using troposphere allows us to take advantage of the logic presented by a high level programming language - Python (i.e. adding conditional logic and the ability to integrate with other application code).
 A combination of Flask, Apache and WSGI_MOD has been used to provide a scalable solution with provisioning achieved simply through UserData. AutoScaling actions combined with CloudWatch alarms ensures that instances will scale when hitting a predetermined CPU usage limit. 
 The WebApp can be reached directly via the ELB or the DNS:
 
