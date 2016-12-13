@@ -160,7 +160,6 @@ class WebApp(object):
             IamInstanceProfile="arn:aws:iam::205198152101:instance-profile/webapps3",
             ImageId="ami-b73b63a0",
             KeyName="thivancf",
-            AssociatePublicIpAddress=True,
             SecurityGroups=[Ref(autoscaling_sg)],
             InstanceType="t2.micro",
         ))
