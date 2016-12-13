@@ -3,7 +3,7 @@ from troposphere import Parameter, Ref, Template
 from troposphere.autoscaling import AutoScalingGroup, LaunchConfiguration, ScalingPolicy
 from troposphere.elasticloadbalancing import LoadBalancer
 from troposphere.policies import AutoScalingReplacingUpdate, AutoScalingRollingUpdate, UpdatePolicy
-from troposphere.ec2 import SecurityGroup, SecurityGroupRule
+from troposphere.ec2 import SecurityGroup, SecurityGroupRule, SecurityGroupEgress
 from troposphere.elasticloadbalancing import ConnectionDrainingPolicy, HealthCheck, Listener
 from troposphere.cloudwatch import Alarm, MetricDimension
 from troposphere.route53 import RecordSetType, AliasTarget
@@ -64,14 +64,6 @@ class WebApp(object):
                         CidrIp="0.0.0.0/0",
                     )
                 ]
-                # SecurityGroupEgress=[
-                #     SecurityGroupRule(
-                #         IpProtocol="tcp",
-                #         FromPort="1234",
-                #         ToPort="1234",
-                #         CidrIp="0.0.0.0/0",
-                #     )
-                # ]
             )
         )
 
@@ -88,16 +80,17 @@ class WebApp(object):
                         SourceSecurityGroupId=Ref(elb_sg),
                     )
                 ]
-                # SecurityGroupEgress=[
-                #     SecurityGroupRule(
-                #         IpProtocol="tcp",
-                #         FromPort="1234",
-                #         ToPort="1234",
-                #         CidrIp="0.0.0.0/0",
-                #     )
-                # ]
             )
         )
+
+        self.t.add_resource(SecurityGroupEgress(
+            "ELBegress",
+            DestinationSecurityGroupId=Ref(autoscaling_sg),
+            GroupId=Ref(elb_sg),
+            IpProtocol="-1",
+            FromPort="-1",
+            ToPort="-1"
+        ))
         return elb_sg, autoscaling_sg
 
     def create_elb(self, subnet1, subnet2, elb_sg):

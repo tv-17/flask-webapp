@@ -126,6 +126,20 @@
             },
             "Type": "AWS::CloudWatch::Alarm"
         },
+        "ELBegress": {
+            "Properties": {
+                "DestinationSecurityGroupId": {
+                    "Ref": "AutoscalingSG"
+                },
+                "FromPort": "-1",
+                "GroupId": {
+                    "Ref": "ElbSg"
+                },
+                "IpProtocol": "-1",
+                "ToPort": "-1"
+            },
+            "Type": "AWS::EC2::SecurityGroupEgress"
+        },
         "ElbSg": {
             "Properties": {
                 "GroupDescription": "Allows inbound connection from from everywhere on port 80",
